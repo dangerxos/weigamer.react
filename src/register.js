@@ -28,7 +28,6 @@ export default function Register() {
     document.title = "Weigamer • Registro";
   }, []);
 
-  // Cuando cambia la región, limpiamos la comuna seleccionada
   useEffect(() => {
     setComuna("");
   }, [region]);
@@ -36,7 +35,6 @@ export default function Register() {
   const onSubmit = (e) => {
     e.preventDefault();
 
-    // Validación mínima de ejemplo (puedes mantener tu validateForm si lo tienes)
     if (!region || !comuna) {
       alert("Selecciona región y comuna.");
       return;

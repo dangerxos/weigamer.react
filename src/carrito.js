@@ -1,133 +1,86 @@
-// public/assets/js/cart.js
-(function () {
-  const $ = (sel, ctx = document) => ctx.querySelector(sel);
-  const PRODUCTS_KEY = "weigamer_products";
-  const CART_KEY = "weigamer_cart";
+import { Link } from "react-router-dom";
 
-  function getProducts() {
-    try {
-      return JSON.parse(localStorage.getItem(PRODUCTS_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  }
+const money = (n) => `${n.toFixed(2)} USD`;
 
-  function getCart() {
-    try {
-      return JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  }
+export default function Carrito({ items, increment, decrement, removeItem, clear, total }) {
+  return (
+    <div style={{ padding: "2rem", color: "#fff" }}>
+      <h1 style={{ fontSize: "1.6rem", marginBottom: 8 }}>Tu carrito</h1>
 
-  function setCart(items) {
-    localStorage.setItem(CART_KEY, JSON.stringify(items));
-  }
-
-  function updateQty(id, qty) {
-    qty = Math.max(1, parseInt(qty || "1", 10));
-    const cart = getCart();
-    const i = cart.findIndex((x) => x.id === id);
-    if (i >= 0) {
-      cart[i].qty = qty;
-      setCart(cart);
-    }
-  }
-
-  function removeFromCart(id) {
-    const cart = getCart().filter((x) => x.id !== id);
-    setCart(cart);
-  }
-
-  function cartTotal() {
-    const cart = getCart();
-    const products = getProducts();
-    return cart.reduce((acc, item) => {
-      const p = products.find((pp) => pp.id === item.id);
-      return p ? acc + p.price * item.qty : acc;
-    }, 0);
-  }
-
-  function renderCart() {
-    const area = $("#cart-area");
-    const cart = getCart();
-    const products = getProducts();
-
-    if (!area) return;
-
-    if (cart.length === 0) {
-      area.innerHTML = '<div class="card">Tu carrito está vacío.</div>';
-      return;
-    }
-
-    const rows = cart
-      .map((item) => {
-        const p = products.find((pp) => pp.id === item.id);
-        if (!p) return "";
-        return `
-          <tr>
-            <td style="display:flex;align-items:center;gap:.75rem">
-              <img src="${p.img}" style="width:72px;height:52px;object-fit:cover;border-radius:.5rem;border:1px solid #22306b"/>
-              ${p.name}<br/><span class="badge">${p.category}</span>
-            </td>
-            <td>${p.price.toFixed(2)} USD</td>
-            <td><input type="number" min="1" value="${item.qty}" data-qty="${p.id}" style="width:90px"/></td>
-            <td>${(p.price * item.qty).toFixed(2)} USD</td>
-            <td><button class="btn secondary" data-remove="${p.id}">Quitar</button></td>
-          </tr>`;
-      })
-      .join("");
-
-    const total = cartTotal().toFixed(2);
-
-    area.innerHTML = `
-      <div class="card">
-        <table class="table">
-          <thead>
-            <tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Subtotal</th><th></th></tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem">
-          <a class="btn secondary" href="products.html">Seguir comprando</a>
-          <div>
-            Total: <b>${total} USD</b>
-            <button class="btn" id="checkout">Pagar (simulado)</button>
-          </div>
+      {items.length === 0 ? (
+        <div style={emptyStyles.wrap}>
+          <p style={{ color: "#a3b3c9" }}>Aún no tienes productos.</p>
+          <Link to="/products" style={emptyStyles.btn}>Ir a productos</Link>
         </div>
-      </div>`;
-  }
+      ) : (
+        <>
+          <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
+            {items.map((it) => (
+              <div key={it.id} style={rowStyles.row}>
+                <img
+                  src={`/img/${it.img}`}
+                  alt={it.name}
+                  style={rowStyles.image}
+                  loading="lazy"
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={rowStyles.top}>
+                    <strong>{it.name}</strong>
+                    <span style={{ color: "#9ee0b5" }}>{money(it.price)}</span>
+                  </div>
+                  <div style={rowStyles.actions}>
+                    <div style={rowStyles.qtyBox}>
+                      <button onClick={() => decrement(it.id)} style={rowStyles.qtyBtn}>−</button>
+                      <span>{it.qty}</span>
+                      <button onClick={() => increment(it.id)} style={rowStyles.qtyBtn}>＋</button>
+                    </div>
+                    <button onClick={() => removeItem(it.id)} style={rowStyles.removeBtn}>Quitar</button>
+                  </div>
+                </div>
+                <div style={{ minWidth: 90, textAlign: "right" }}>
+                  <div style={{ color: "#a3b3c9", fontSize: 12 }}>Subtotal</div>
+                  <div><b>{money(it.price * it.qty)}</b></div>
+                </div>
+              </div>
+            ))}
+          </div>
 
-  document.addEventListener("DOMContentLoaded", () => {
-    renderCart();
+          <div style={footerStyles.bar}>
+            <button onClick={clear} style={footerStyles.clear}>Vaciar</button>
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ color: "#a3b3c9" }}>Total</span>
+              <strong style={{ fontSize: "1.2rem" }}>{money(total)}</strong>
+              <button
+                style={footerStyles.checkout}
+                onClick={() => alert("Compra simulada (demo).")}
+              >
+                Pagar
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
-    document.body.addEventListener("input", (e) => {
-      const el = e.target.closest("[data-qty]");
-      if (el) {
-        updateQty(el.getAttribute("data-qty"), el.value);
-        renderCart();
-      }
-    });
+const rowStyles = {
+  row: { display: "flex", gap: 12, alignItems: "center", background: "#111827", borderRadius: 12, padding: 10 },
+  image: { width: 72, height: 72, objectFit: "cover", borderRadius: 10 },
+  top: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  actions: { display: "flex", alignItems: "center", gap: 12 },
+  qtyBox: { display: "inline-flex", gap: 10, alignItems: "center", background: "#0d1320", border: "1px solid #1f2937", borderRadius: 10, padding: "4px 8px" },
+  qtyBtn: { background: "transparent", color: "#cfd6e6", border: "none", fontSize: 18, cursor: "pointer", width: 24 },
+  removeBtn: { background: "#1f2937", color: "#cfd6e6", border: "none", padding: ".4rem .7rem", borderRadius: 10, cursor: "pointer" },
+};
 
-    document.body.addEventListener("click", (e) => {
-      const rem = e.target.closest("[data-remove]");
-      if (rem) {
-        removeFromCart(rem.getAttribute("data-remove"));
-        renderCart();
-      }
-      if (e.target.id === "checkout") {
-        alert("Compra simulada. En futuras entregas se conectará a backend.");
-        setCart([]);
-        renderCart();
-      }
-    });
-  });
+const footerStyles = {
+  bar: { display: "flex", alignItems: "center", gap: 12, background: "#0d1320", border: "1px solid #1f2937", borderRadius: 12, padding: 12 },
+  clear: { background: "#1f2937", color: "#cfd6e6", border: "none", padding: ".55rem .9rem", borderRadius: 10, cursor: "pointer" },
+  checkout: { background: "#10b981", color: "#0b0f15", border: "none", padding: ".6rem 1rem", borderRadius: 10, fontWeight: 800, cursor: "pointer" },
+};
 
-  // Opcional: expone helpers por si los necesitas en otros scripts
-  window.getCart = getCart;
-  window.setCart = setCart;
-  window.updateQty = updateQty;
-  window.removeFromCart = removeFromCart;
-  window.cartTotal = cartTotal;
-  window.renderCart = renderCart;
-})();
+const emptyStyles = {
+  wrap: { background: "#0d1320", border: "1px solid #1f2937", borderRadius: 12, padding: 16 },
+  btn: { marginTop: 8, display: "inline-block", background: "#10b981", color: "#0b0f15", textDecoration: "none", padding: ".55rem .9rem", borderRadius: 10, fontWeight: 700 }
+};
